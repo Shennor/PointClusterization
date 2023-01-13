@@ -1,0 +1,19 @@
+
+services:
+  master:
+    container_name: points-master
+    build: ./points-master
+    volumes:
+      - ./testData.txt:/app/testData.txt
+    ports:
+      - "8080:8080"
+
+  slave:
+    build: ./points-calc-node
+    volumes:
+      - ./slave.conf:/app/slave.conf
+    deploy:
+      mode: replicated
+      replicas: 3
+    depends_on:
+      - master
