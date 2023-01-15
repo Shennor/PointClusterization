@@ -4,7 +4,7 @@ services:
     container_name: points-master
     build: ./points-master
     volumes:
-      - ./testData.txt:/app/testData.txt
+      - ./data:/app/data
     ports:
       - "8080:8080"
 
