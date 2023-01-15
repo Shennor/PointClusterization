@@ -22,11 +22,6 @@ fun Application.module() {
         install(WebSockets) {
             contentConverter = KotlinxWebsocketSerializationConverter(Cbor)
         }
-//        install(ContentNegotiation) {
-//            cbor(Cbor {
-//                ignoreUnknownKeys = true
-//            })
-//        }
     }
 
     val text = File("slave.conf").readText()

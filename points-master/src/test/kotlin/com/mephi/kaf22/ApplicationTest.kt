@@ -22,13 +22,12 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlin.test.*
 import io.ktor.server.testing.*
-import com.mephi.kaf22.plugins.*
 
 class ApplicationTest {
     @Test
     fun testRoot() = testApplication {
         application {
-            configureRouting()
+            //configureRouting()
         }
         client.get("/").apply {
             assertEquals(HttpStatusCode.OK, status)

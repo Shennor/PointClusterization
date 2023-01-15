@@ -10,14 +10,15 @@ import kotlinx.coroutines.launch
 
 
 fun Application.sockets(client: HttpClient, config: SlaveConfig) {
+    // making micro-thread using threadpool of application (ktor)
     launch {
-        client.webSocket(HttpMethod.Get, host = "points-master", port = 8080, path = "/ws") {
+        client.webSocket(HttpMethod.Get, host = "points-master", port = 8080, path = "/ws", block = {
             while (isActive) {
                 val task = receiveDeserialized<Task>()
                 val solution = this@sockets.solve(task);
                 sendSerialized(solution)
             }
-        }
+        })
     }
 }
 

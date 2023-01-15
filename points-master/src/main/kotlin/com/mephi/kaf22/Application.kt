@@ -13,16 +13,7 @@ import io.ktor.server.websocket.*
 import io.ktor.util.collections.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.consume
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import java.io.File
-import java.util.concurrent.ConcurrentLinkedDeque
 import kotlin.math.roundToInt
 
 fun main(args: Array<String>): Unit =
@@ -69,21 +60,21 @@ data class Session(val socket: WebSocketServerSession)
 typealias Sessions = MutableSet<Session>
 
 suspend fun KMeanTask.solveKMeanTask(solvers: Sessions): ProcessedSolution {
-    val kPoints = points.run {
+    val initialCenters = points.run {
         (1..k).map { random() }
     }
-    val solution = iteration(kPoints, solvers)
+    val solution = iteration(initialCenters, solvers)
     return solution
 }
 
 private tailrec suspend fun KMeanTask.iteration(
-    kPoints: List<Point2>,
+    currentCenters: List<Point2>,
     solvers: Sessions
 ): ProcessedSolution {
-    val nGroups = (points.size.toDouble() / solvers.size).roundToInt()
-    val groups = points.chunked(nGroups)
+    val chunkSize = (points.size.toDouble() / solvers.size).roundToInt() + 1
+    val groups = points.chunked(chunkSize)
 
-    val tasks = groups.map { Task(kPoints, it) }
+    val tasks = groups.map { Task(currentCenters, it) }
     val solutions = tasks.zip(solvers).map {
         it.second.sendTask(it.first)
     }
@@ -100,7 +91,6 @@ private tailrec suspend fun KMeanTask.iteration(
 }
 
 
-data class KMeanTask(val k: Int, val points: List<Point2>, val accuracy: Double)
 
 fun mergeSolutions(solutions: List<Solution>): Solution {
     val mutableMap = mutableMapOf<Point2, List<Point2>>()
@@ -112,8 +102,7 @@ fun mergeSolutions(solutions: List<Solution>): Solution {
     return Solution(mutableMap)
 }
 
-data class ProcessedGroup(val oldCenter: Point2, val newCenter: Point2, val group: List<Point2>)
-typealias ProcessedSolution = List<ProcessedGroup>
+
 
 fun calculateCenters(solution: Solution): ProcessedSolution =
     solution.mapping.entries.map {
@@ -121,14 +110,6 @@ fun calculateCenters(solution: Solution): ProcessedSolution =
         val mean = Point2(sum.x / it.value.size, sum.y / it.value.size)
         ProcessedGroup(it.key, mean, it.value)
     }
-
-fun parsePoints(path: String, accuracy: Double): KMeanTask {
-    val lines = File(path).readLines()
-    val k = lines.first().toInt()
-    val points = lines.drop(1)
-        .map { Json.decodeFromString<Point2>(it) }
-    return KMeanTask(k, points, accuracy)
-}
 
 suspend fun WebSocketServerSession.sendTask(task: Task): Solution {
     sendSerialized(task)
