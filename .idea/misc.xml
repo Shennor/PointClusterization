@@ -5,4 +5,5 @@
     <file type="web" url="file://$PROJECT_DIR$/points-calc-node" />
     <file type="web" url="file://$PROJECT_DIR$/points-master" />
   </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_19" project-jdk-name="17" project-jdk-type="JavaSDK" />
 </project>
