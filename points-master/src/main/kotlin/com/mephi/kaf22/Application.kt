@@ -12,8 +12,18 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.util.collections.*
 import io.ktor.websocket.*
+import jetbrains.datalore.base.math.ipow
+import jetbrains.letsPlot.export.ggsave
+import jetbrains.letsPlot.geom.geomPoint
+import jetbrains.letsPlot.geom.geom_point
+import jetbrains.letsPlot.ggplot
+import jetbrains.letsPlot.letsPlot
+import jetbrains.letsPlot.scale.scaleColorManual
+import jetbrains.letsPlot.scale.scale_color_manual
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.serialization.ExperimentalSerializationApi
+import java.awt.Color
+import java.io.File
 import kotlin.math.roundToInt
 
 fun main(args: Array<String>): Unit =
@@ -34,7 +44,8 @@ fun Application.module() {
             val accuracy = call.request.queryParameters["accuracy"]?.toDouble() ?: 0.1
             val kMeanTask = parsePoints(path, accuracy)
             val solution = kMeanTask.solveKMeanTask(sessionSet)
-            call.respond(solution)
+            val file = plotClusters(solution.map { it.group })
+            call.respondFile(File(file))
         }
 
 
@@ -114,4 +125,33 @@ fun calculateCenters(solution: Solution): ProcessedSolution =
 suspend fun WebSocketServerSession.sendTask(task: Task): Solution {
     sendSerialized(task)
     return receiveDeserialized()
+}
+
+fun plotClusters(clusters: List<List<Point2>>): String {
+    val data = clusters.flatMapIndexed { index, cluster ->
+        cluster.map { point ->
+            mapOf("x" to point.x, "y" to point.y, "cluster" to index)
+        }
+    }
+    val data1 = makeClusters(data)
+
+    val plot = ggplot(data1) { x = "x"; y = "y" } +
+            geomPoint(size = 4.0) { color = "cluster" }
+//            scaleColorManual(values = (clusters.indices).map { it })
+
+    return ggsave(plot, "plot.html")
+}
+fun <A, B> makeClusters(data: List<Map<A, B>>): Map<A, List<B>> {
+    val clusters = mutableMapOf<A, MutableList<B>>()
+    data.forEach { item ->
+        item.keys.map { key ->
+            val value = item[key]
+            if (clusters.containsKey(key)) {
+                clusters[key]?.add(value!!)
+            } else {
+                clusters[key] = mutableListOf(value!!)
+            }
+        }
+    }
+    return clusters
 }
