@@ -13,6 +13,6 @@ To run the system, you will need to have Docker and Docker Compose installed on 
 docker-compose up -d --build
 ```
 
-This will start the master and multiple slaves, and you will be able to send tasks to the master using the localhost:8080/solve endpoint.
+This will start the master and multiple slaves, and you will be able to send tasks to the master using the ```localhost:8080/solve``` endpoint.
 
 Please note that this project is a coursework and is intended for educational purposes only.
